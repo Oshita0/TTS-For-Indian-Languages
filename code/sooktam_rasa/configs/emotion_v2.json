@@ -1,0 +1,17 @@
+{
+  "_comment": "v2: make the rasa label necessary. Rasa has 0 sentences recorded in >1 emotion, so v1 learned emotion from the words and ignored the label (label gain +0.02-0.17%).",
+  "frames_per_batch": 16000,
+  "grad_accum": 1,
+  "max_steps": 6000,
+  "p_pair": 1.0,
+  "emo_input_proj": true,
+  "text_drop_keep_emo_prob": 0.3,
+  "cls_weight": 0.15,
+  "lr_emotion": 1e-3,
+  "emo_drop_prob": 0.15,
+  "amp": "auto",
+  "num_workers": 4,
+  "val_every": 500,
+  "save_every": 500,
+  "sample_every": 1000
+}

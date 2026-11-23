@@ -1,0 +1,524 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=22mm,top=23mm,bottom=21mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,booktabs,tabularx,array,xcolor,fancyhdr}
+\usepackage[font=small,labelfont=bf,skip=7pt]{caption}
+\usepackage[hidelinks]{hyperref}
+\definecolor{ink}{HTML}{182835}
+\definecolor{accent}{HTML}{245B65}
+\definecolor{muted}{HTML}{546771}
+\definecolor{wash}{HTML}{EDF5F4}
+\definecolor{bargray}{HTML}{81939C}
+\hypersetup{pdftitle={Sooktam-2 x Navarasa},pdfauthor={Oshita Bhongade and Pratyush Shrivastav},
+  colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 1pt}
+\setlength{\emergencystretch}{2em}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.14}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{accent}\textsf{SOOKTAM-2 \(\times\) NAVARASA}}
+\fancyhead[R]{\small\color{muted}\textsf{UGP-2 \enspace|\enspace IIT KANPUR}}
+\fancyfoot[L]{\small\color{muted}\textsf{Oshita Bhongade \enspace\(\cdot\)\enspace Pratyush Shrivastav}}
+\fancyfoot[R]{\small\color{accent}\textsf{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\note}[1]{\par{\small\color{muted}#1}\par}
+\newcommand{\sectionpage}[1]{\clearpage\section{#1}}
+\newcommand{\emoguide}{\gamma_{\mathrm{emo}}}
+\newlength{\barunit}
+\newcommand{\scorebar}[3]{\textcolor{#1}{\rule{#2\barunit}{1.7mm}}\enspace #3}
+\newcommand{\archbox}[3]{\put(#1,#2){\makebox(0,0)[l]{%
+  \colorbox{wash}{\parbox[c][9mm][c]{38mm}{\centering\sffamily\small #3}}}}}
+
+\begin{document}
+\thispagestyle{empty}
+{\color{accent}\large\sffamily\bfseries UNDERGRADUATE PROJECT REPORT}\par
+{\color{muted}\sffamily UGP-2 \enspace|\enspace Indian Institute of Technology Kanpur}\par
+\vspace{12mm}
+{\color{ink}\Huge\bfseries Sooktam-2 \(\times\) Navarasa\par}
+\vspace{2mm}
+{\color{accent}\LARGE Emotion-Controlled and Duration-Aware Text-to-Speech for Hindi and Tamil\par}
+\vspace{8mm}
+{\small\sffamily\bfseries\color{accent}PROJECT TEAM}\par
+{\Large Oshita Bhongade \quad\(\cdot\)\quad Pratyush Shrivastav}\par
+{\color{muted}Project supervisor: Prof.\ Arnab Bhattacharya}\par
+{\color{muted}11 November 2026}\par
+\vspace{5mm}
+{\color{accent}\rule{\linewidth}{0.7pt}}\par
+
+\subsection*{Abstract}
+We extended BharatGen's pretrained Sooktam-2 speech synthesizer with two components: a learned duration predictor that attends to a reference mel-spectrogram, and a lightweight adapter that conditions speech on seven emotion labels. We trained the components on a curated subset of AI4Bharat Rasa containing 19,971 Hindi and Tamil utterances from four speakers. On held-out same-speaker pairs, the duration predictor reduced mean absolute percentage error from 16.59\% with the grapheme heuristic to 7.73\%. An initial emotion adapter lowered reconstruction loss but showed little sensitivity to the requested label. A revised training setup yielded label-dependent synthesis on neutral text. At emotion guidance 1, the in-domain critic classified 76.2\% of outputs as the requested emotion, while the independent emotion2vec+ judge classified 44.0\%. The same setting yielded a Whisper character error rate of 9.8\% and an ECAPA speaker similarity of 0.653 on the Rasa control set.
+
+On a separate four-speaker IndicVoices-R pilot, speaker similarity fell from 0.574 for the base system to 0.434 with v2. A matched LoRA-only ablation scored 0.460 and reduced similarity for every speaker. The completed experiments therefore show improved duration prediction and measurable emotion control, alongside a voice-preservation cost from the adapter.
+
+\vspace{4mm}
+\noindent\colorbox{wash}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\small
+\textbf{Report structure.} Sections 1--5 describe the backbone, data, duration prediction and adapter training. Sections 6--9 present the Rasa evaluations and external-speaker pilot. Sections 10--11 cover published comparisons, reproducibility and conclusions. The appendix records training settings and the per-label confusion matrix.}}
+
+\sectionpage{Problem and acoustic backbone}
+Text-to-speech (TTS) predicts the sound of an utterance from its text. In reference-conditioned TTS, a short recording and its transcript provide a voice and speaking-rate example. The model must choose how long the new utterance should be and how it should sound. This project addresses both decisions for Hindi and Tamil. We ask whether learned duration improves on counting characters, whether an explicit label can control delivery when both the prompt and target text are neutral, and how emotion adaptation changes speaker similarity.
+
+\subsection{Pretrained Sooktam-2}
+We use BharatGen's released Sooktam-2 checkpoint and Common Label Set (CLS) tokenizer \cite{sooktam}. The backbone follows F5-TTS \cite{f5}. It is a Diffusion Transformer (DiT) in architectural terms \cite{dit}, with a flow-matching objective, a width of 1,024, 22 transformer blocks and 16 attention heads in the released configuration. It works on 100-bin log-mel frames at 24\,kHz, with a hop of 256 samples. One frame therefore represents about 10.67\,ms. A pretrained Vocos vocoder maps the generated frames to a waveform \cite{vocos}. The pretrained acoustic weights stay frozen in the adapter experiments.
+
+Flow matching trains a network to predict a velocity that transports a noise sample toward a target acoustic sample \cite{flow}. In the straight-path formulation used here, \(x_t=(1-t)x_0+tx_1\), where \(t\in[0,1]\), \(x_0\) is Gaussian noise and \(x_1\) is speech. The training target is \(x_1-x_0\), with squared error averaged over the masked target frames. During synthesis, the predicted velocity updates the unknown mel span while the reference is supplied as context. Each Euler update takes the form
+\[
+ x_{t_{k+1}} = x_{t_k}+(t_{k+1}-t_k)v_\theta(x_{t_k},t_k,\text{context}).
+\]
+The sampler follows the implementation's time schedule and sway setting. The requested span length determines the number of generated frames, so length is an input to synthesis as well as an evaluation outcome.
+
+\subsection{Changes introduced in this project}
+\begin{tabularx}{\linewidth}{@{}p{31mm}YY@{}}
+\toprule
+Component & Inputs & Role \\
+\midrule
+Duration predictor & Reference mel, reference and target CLS tokens, language, emotion weights & Estimates the target frame count from reference tempo and target text. \\
+Emotion adapter & Rasa label and flow timestep, with the original text and reference prompt & Adds label information to the acoustic generator and trains low-rank attention updates. \\
+Evaluation & Held-out Rasa pairs and an external IndicVoices-R panel & Measures length, emotion, recognition error, speed and voice preservation under specified protocols. \\
+\bottomrule
+\end{tabularx}
+
+The local base comparison switches the adapter off and, in the paired synthesis experiments, retains the same learned duration component with neutral weights. The duration experiment separately compares that component with the original byte ratio and two count-based alternatives.
+
+\sectionpage{Data selection and preparation}
+\subsection{Rasa training and evaluation data}
+AI4Bharat introduced Rasa as a resource for expressive TTS in Indian languages \cite{rasa}. The original publication describes its initial language release, while our runs used the Hindi and Tamil configurations available in the distributed dataset \cite{rasacard}. We selected these languages to examine the same methods on two writing systems. The four speakers are the male and female Rasa voices for each language. The splits hold out utterances from these voices, so they test same-speaker generalization to new recordings.
+
+\begin{table}[!h]
+\centering
+\caption{Utterance counts in the processed Rasa manifest.}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Language & Train & Held out & Total \\
+\midrule
+Hindi & 4,989 & 635 & 5,624 \\
+Tamil & 12,823 & 1,524 & 14,347 \\
+\midrule
+Total & 17,812 & 2,159 & 19,971 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We retained eligible emotional recordings and capped neutral audio per speaker at two hours in training and 0.3 hours in the held-out split. The selection kept clips between one and ten seconds. We trimmed edge silence, added a short 50\,ms pad, resampled audio to 24\,kHz and extracted log-mel features with the backbone frontend. We cached the features in half precision and recorded text, split, speaker group, emotion, token sequence and frame count in the manifest. The mel cache occupied approximately 2.6\,GB. The project log reports zero out-of-vocabulary CLS tokens on the selected data.
+
+\subsection{Labels and data checks}
+\begin{tabularx}{\linewidth}{@{}p{28mm}p{30mm}Y@{}}
+\toprule
+Model label & English gloss & Source mapping \\
+\midrule
+\emph{shanta} & Neutral & Neutral read-speech categories, including WIKI, NEWS, BOOK and INDIC. \\
+\emph{hasya}, \emph{karuna} & Happy, sad & HAPPY and SAD, respectively. \\
+\emph{raudra}, \emph{bhayanaka} & Angry, fearful & ANGER and FEAR, respectively. \\
+\emph{bibhatsa}, \emph{adbhuta} & Disgusted, surprised & DISGUST and SURPRISE, respectively. \\
+\bottomrule
+\end{tabularx}
+
+Navarasa names the nine-rasa framework. Rasa has no dedicated \emph{shringara} or \emph{veera} recordings, so the implementation defines these two labels as untested mixtures of the seven trained labels.
+
+We checked the style mapping before training. An unanchored anger match also matched the command category UMANG, so we anchored the style pattern and explicitly mapped INDIC reads to neutral. This prevents command clips from contaminating the anger label. The selected corpus contained 18,786 distinct sentences, and the text audit found no sentence recorded under more than one emotion label. This non-parallel structure matters for training. Text can provide clues about the recording's intended emotion, which creates a shortcut for a model trained to reconstruct expressive speech.
+
+\sectionpage{Learned duration prediction}
+F5-TTS estimates target duration from the reference duration and a transcript-length ratio \cite{f5}. Sooktam-2's original byte-based variant depends on UTF-8 representation. We compared three choices for the counting function \(L(\cdot)\): bytes, grapheme clusters and CLS tokens. Each heuristic estimates the target number of frames as
+\[
+ \widehat{T}_{\mathrm{ratio}}=T_r\frac{L(s_g)}{\max(1,L(s_r))},
+\]
+where \(T_r\) is the reference length in frames and \(s_r,s_g\) are the reference and target transcripts. Within a language, a count ratio can still miss differences in the time taken by particular sound sequences, pauses and speaking styles.
+
+\subsection{Reference-aware predictor}
+The learned model assigns each token a positive duration weight \(u_i\) using a shared text encoder with language embeddings. The reference gives a tempo estimate \(\tau\). A second term \(c_i\) adjusts each target token using the requested emotion and cross-attention to the encoded reference mel \cite{attention}. Two strided convolutions reduce the number of reference time positions by about four before attention. The predictor computes
+\[
+ u_i=\operatorname{softplus}(f(h_i)), \qquad
+ \tau=\frac{T_r}{\sum_{j\in r}u_j}, \qquad
+ \widehat{T}_g=\tau\sum_{i\in g}u_i\exp(c_i).
+\]
+At initialization, \(u_i=1\) and \(c_i=0\), which gives the CLS-token count ratio. The model learns departures from this starting point by minimizing absolute error on log frame counts with a small tempo regularizer. We trained it for 15,000 steps with a batch size of 32 and an AdamW OneCycle schedule with peak learning rate \(3\times10^{-4}\). The model has approximately four million parameters.
+
+\subsection{Held-out duration results}
+The duration test paired reference and target clips from the same speaker, using predominantly neutral references. The error is \(100|\widehat T-T|/\max(T,1)\), averaged over test pairs. We evaluate the frame-count estimate directly here, independently of the quality of the synthesized waveform.
+
+\begin{figure}[!h]
+\centering\small\sffamily
+\setlength{\barunit}{1.65mm}
+\begin{tabular}{@{}lrrll@{}}
+\toprule
+Test group & UTF-8 bytes & CLS count & Graphemes & Learned \\
+\midrule
+Hindi & 13.05\% & 11.82\% & \scorebar{bargray}{11.88}{11.88\%} & \scorebar{accent}{6.53}{6.53\%} \\
+Tamil & 20.33\% & 19.44\% & \scorebar{bargray}{18.55}{18.55\%} & \scorebar{accent}{8.23}{8.23\%} \\
+All pairs & 18.19\% & 17.20\% & \scorebar{bargray}{16.59}{16.59\%} & \scorebar{accent}{7.73}{7.73\%} \\
+\bottomrule
+\end{tabular}
+\caption{Mean absolute percentage duration error on held-out pairs. Lower is better. Bars share a scale and start at zero.}
+\end{figure}
+
+Compared with the grapheme heuristic, the learned predictor reduced overall error by 8.86 percentage points, or 53.4\% relative. The Tamil--Hindi gap fell from 6.67 to 1.70 percentage points on these pairs. The gains apply to within-language references and targets from the four Rasa speakers. The predicted quantity is total utterance duration, so this test does not separately validate token boundaries, rhythm or cross-script transfer.
+
+\sectionpage{Emotion conditioning and inference}
+\subsection{Low-rank attention updates}
+We adapted Sooktam-2 with LoRA \cite{lora}. For a frozen attention projection \(W\), the adapter learns matrices \(A\) and \(B\) with a low intermediate rank \(r\). The effective projection is
+\[
+ W_{\mathrm{eff}}=W+\frac{\alpha}{r}BA .
+\]
+The project uses rank 16 and applies the update to query, key, value and output projections across the DiT blocks. This allows the attention layers to adapt while leaving the backbone parameters frozen. The first adapter trained about 4.20 million parameters. The second trained about 5.51 million, including an extra input-level conditioning projection.
+
+\subsection{Emotion embedding and reference pairing}
+The adapter maps seven label weights or a null condition to an emotion vector. Both versions add it to the timestep conditioning used by adaptive layer normalization (AdaLN). Version 2 also adds a projected emotion vector to each frame of the input embedding. The new projections start with zero contribution.
+
+\begin{figure}[!h]
+\centering
+\setlength{\unitlength}{1mm}
+\begin{picture}(163,64)
+  \archbox{1}{57}{Reference mel and\\reference/target CLS}
+  \archbox{61}{57}{Noisy target mel,\\reference mel and CLS}
+  \archbox{121}{57}{Rasa weights}
+  \archbox{1}{39}{Duration predictor}
+  \archbox{61}{39}{DiT input embedding}
+  \archbox{121}{39}{Emotion encoder}
+  \archbox{61}{21}{DiT blocks with AdaLN\\and LoRA on Q/K/V/out}
+  \archbox{61}{4}{Flow sampling, then Vocos}
+  \put(21,48){\makebox(0,0){\(\downarrow\)}}
+  \put(81,48){\makebox(0,0){\(\downarrow\)}}
+  \put(141,48){\makebox(0,0){\(\downarrow\)}}
+  \put(51,39){\makebox(0,0){\(\longrightarrow\)}}
+  \put(51,42){\makebox(0,0)[b]{\sffamily\small Frames}}
+  \put(111,39){\makebox(0,0){\(\longleftarrow\)}}
+  \put(111,42){\makebox(0,0)[b]{\sffamily\small v2 only}}
+  \put(81,30){\makebox(0,0){\(\downarrow\)}}
+  \put(141,21){\rule{0.4pt}{13mm}}
+  \put(109,21){\makebox(0,0){\(\longleftarrow\)}}
+  \put(111,21){\rule{30mm}{0.4pt}}
+  \put(123,24){\makebox(0,0)[b]{\sffamily\small Added to timestep}}
+  \put(81,12.5){\makebox(0,0){\(\downarrow\)}}
+\end{picture}
+\caption{Conditioning paths during inference. The rasa also enters the duration predictor. Vocos decodes the target mel after the sampler crops the prompt frames.}
+\end{figure}
+
+In paired training, the model observes a neutral prompt and learns the flow over a different target utterance from the same speaker. The neutral prompt reduces emotion cues from the reference, while the target wording can still supply such cues.
+
+\subsection{Classifier-free guidance}
+The inference rule adapts classifier-free guidance \cite{cfg} to separate text/reference guidance from the emotion adjustment. Let \(v_{\rm all}\) use text, reference and emotion, \(v_{\rm uncond}\) use the dropped-input branch, and \(v_{\rm no\,emo}\) retain text and reference while using the null emotion state. The sampler combines the predictions as
+\[
+ v =
+ v_{\rm all}
+ + \gamma_{\rm text}(v_{\rm all}-v_{\rm uncond})
+ + \emoguide(v_{\rm all}-v_{\rm no\,emo}).
+\]
+The control experiments use \(\gamma_{\rm text}=2\). At \(\emoguide=0\), the sampler drops the third branch and retains the label in \(v_{\rm all}\). The base condition disables both the emotion pathway and LoRA updates.
+
+\sectionpage{Adapter training and diagnosis}
+\subsection{Version 1}
+The first run trained for 8,000 steps with a budget of 16,000 mel frames per batch, using bfloat16 on an NVIDIA L4. The training flow-matching loss declined from about 0.72 to 0.62. Seventy percent of batches used a neutral reference from the same speaker and a separate target utterance. The remaining batches used random infilling. The training code dropped emotion labels with probability 0.15. During v1 training, each validation check sampled different clips, so the losses were noisy (0.587--0.662). After the run, we fixed the validation routine to reuse the same clips and noise across checks.
+
+We checked whether the lower loss came with useful label sensitivity. For 630 held-out utterances, the diagnostic kept examples, prompts and noise fixed while changing the label. The base and null runs differed substantially in reconstruction loss. The null and correct labels differed by only 0.0001 at step 6,000 and 0.0010 at step 8,000. This is consistent with adaptation to the corpus and its recordings with only a small measured label effect.
+
+\begin{table}[!h]
+\centering
+\caption{Version 1 flow-matching loss in the matched label diagnostic.}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Checkpoint & Base & Null label & Correct label & Wrong label \\
+\midrule
+Step 6,000 & 0.7938 & 0.6344 & 0.6343 & 0.6366 \\
+Step 8,000 & 0.7938 & 0.6345 & 0.6335 & 0.6358 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The base-to-null reduction was about 20.1\% in this diagnostic. It quantifies reconstruction loss and does not directly measure whether the synthesized voice moved toward a training speaker.
+
+\subsection{Version 2}
+Version 2 used a separate neutral reference in every paired example. In 30\% of training steps, it dropped text while retaining the label. We also added the input-level projection and a frozen mel emotion critic. The critic is a five-layer convolutional classifier with masked pooling. It reached 90.6\% on the 2,159 real held-out Rasa utterances. Its auxiliary cross-entropy used a weight of 0.15 and scored a one-step estimate of clean target audio, \(\widehat{x}_1=x_t+(1-t)v_\theta\). The critic can partly recover emotion from target information already present in that estimate, especially late in the flow path. The neutral-text synthesis test is therefore a more direct test of control at generation time.
+
+We trained v2 for 6,000 steps on an NVIDIA A100, using the same frame budget. Final fixed-batch loss was 0.6246 with the correct label and 0.6193 with the null label on emotionally worded targets. A label can control synthesis on neutral text even when it offers little reconstruction benefit on already expressive text. Because several training choices changed together, the v1/v2 comparison evaluates the revised recipe as a whole.
+
+\sectionpage{Emotion control on the Rasa speakers}
+We selected two held-out neutral reference clips per language, one for each speaker, and three neutral sentences per language. Their combinations produced 12 reference/text pairs. For each adapter and guidance setting, we generated all seven labels, yielding 84 outputs. The base model produced one output per pair, for 12 clips. The controlled text and reference reduce the extent to which a judge could identify the target emotion from wording or prompt style alone.
+
+\begin{table}[!h]
+\centering
+\caption{Requested-emotion accuracy from the in-domain critic on neutral text.}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+Emotion guidance & v1 all labels & v1 non-neutral & v2 all labels & v2 non-neutral \\
+\midrule
+0 & 25.0\% & 13.9\% & 70.2\% & 65.3\% \\
+1 & 28.6\% & 18.1\% & 76.2\% & 72.2\% \\
+3 & 32.1\% & 20.8\% & 81.0\% & 77.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!h]
+\centering\small\sffamily
+\setlength{\barunit}{1mm}
+\begin{tabular}{@{}lr@{\quad}l@{}}
+ & \multicolumn{2}{l}{Requested-label accuracy on non-neutral targets} \\
+Guidance 0 & v1 & \scorebar{bargray}{13.9}{13.9\%} \\
+           & v2 & \scorebar{accent}{65.3}{65.3\%} \\
+Guidance 1 & v1 & \scorebar{bargray}{18.1}{18.1\%} \\
+           & v2 & \scorebar{accent}{72.2}{72.2\%} \\
+Guidance 3 & v1 & \scorebar{bargray}{20.8}{20.8\%} \\
+           & v2 & \scorebar{accent}{77.8}{77.8\%} \\
+\end{tabular}
+\caption{In-domain critic accuracy on the 72 non-neutral targets per version and guidance setting. Bars start at zero.}
+\end{figure}
+
+The critic classified all 12 unconditioned base samples as neutral. At guidance 3, it matched all 12 examples each for anger, fear and disgust. It predicted neutral for 8 of 12 happy and 6 of 12 sad examples (Appendix~\ref{app:settings}, Table~\ref{tab:confusion}). This critic also supplied v2's training signal, so its scores can favor cues the generator learned to emphasize.
+
+\begin{table}[!h]
+\centering
+\caption{Independent emotion2vec+, Whisper large-v3 and ECAPA measurements.}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Condition & Clips & Label agreement & CER & ECAPA cosine \\
+\midrule
+Real Rasa recordings & 140 & 40.7\% & 6.7\% & -- \\
+Base Sooktam-2 & 12 & -- & 10.1\% & 0.781 \\
+v2, guidance 0 & 84 & 33.3\% & 9.5\% & 0.685 \\
+v2, guidance 1 & 84 & 44.0\% & 9.8\% & 0.653 \\
+v2, guidance 3 & 84 & 58.3\% & 10.1\% & 0.568 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We mapped the independent classifier's labels to the seven target categories \cite{emotion2vec}. Its agreement on 140 real recordings was only 40.7\%, with frequent happy predictions and only one correct classification each out of 20 sad and 20 disgust recordings. Agreement above that number for strongly guided synthesis may reflect cues that the classifier recognizes readily. Human recognition and naturalness require separate evidence.
+
+Character error rate (CER) uses Whisper large-v3 transcriptions \cite{whisper} and measures normalized character edit distance to the target text. CER stayed between 9.5\% and 10.1\% on these synthesis conditions. ECAPA cosine to the prompt \cite{ecapa,ecapamodel} fell as guidance increased. Guidance 1 gave an intermediate point between independent emotion agreement and speaker similarity on this test.
+
+\sectionpage{Sampling cost and acoustic measurements}
+\subsection{Speed and step count}
+We measured warmed, GPU-synchronized batch-one synthesis in float32 on a Tesla T4. The end-to-end real-time factor (RTF) divides total synthesis time by the total duration of generated audio. The measurement includes reference preprocessing, acoustic generation and vocoding, and excludes writing the waveform to disk. An RTF below one indicates that audio was generated faster than its playback duration under those conditions. The reported step counts refer to Euler updates. Each update evaluates two conditioning branches for base and three for v2 at guidance 1.
+
+\begin{table}[!h]
+\centering
+\caption{Rasa sampling sweep at guidance 1 for v2. Lower RTF is faster.}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+Steps & Base total & Base ODE & v2 total & v2 ODE & v2 critic accuracy \\
+\midrule
+4  & 0.573 & 0.323 & 0.837 & 0.576 & 61.9\% \\
+8  & 0.910 & 0.662 & 1.411 & 1.152 & 77.4\% \\
+16 & 1.654 & 1.405 & 2.558 & 2.298 & 73.8\% \\
+32 & 3.091 & 2.838 & 4.849 & 4.591 & 73.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At four steps, v2 ran faster than real time with lower critic agreement than at eight steps. Eight steps reduced v2 RTF by a factor of 3.44 relative to 32 steps. Each step count used 84 v2 clips. The 77.4\% and 73.8\% critic scores measure label agreement and give limited evidence about perceptual quality.
+
+\subsection{Matched acoustic evaluation}
+We compared generated audio with 70 matched recordings, five per language and label, using different same-speaker neutral prompts. Both conditions used 32 steps and the learned duration predictor. Version 2 received the true emotion label at guidance 1. We report duration error, the standard deviation of voiced pitch in semitones and an internal spectral distance. The spectral measure aligns 13 MFCCs with dynamic time warping (DTW). The revised values use the log-amplitude scaling documented in the project record. This definition supports a within-experiment comparison.
+
+\begin{table}[!h]
+\centering
+\caption{Matched-recording results. The left table summarizes all 70 targets. The right shows voiced-pitch standard deviation in semitones for ten targets per rasa.}
+{\small\setlength{\tabcolsep}{3pt}
+\begin{minipage}[t]{.49\linewidth}\centering
+\begin{tabular}[t]{@{}lrrr@{}}
+\toprule
+Condition & Dur.\ error & Pitch SD & MFCC-DTW \\
+\midrule
+Real & -- & 4.45 & -- \\
+Base & 11.15\% & 4.46 & 32.6 \\
+v2 & 7.45\% & 4.37 & 35.2 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{.49\linewidth}\centering
+\begin{tabular}[t]{@{}lrrrr@{}}
+\toprule
+Target rasa & Real & Base & v2 & v2 minus real \\
+\midrule
+shanta    & 4.56 & 4.39 & 5.56 & \(+1.00\) \\
+hasya     & 4.61 & 4.03 & 6.03 & \(+1.42\) \\
+karuna    & 4.91 & 4.39 & 3.50 & \(-1.41\) \\
+raudra    & 4.74 & 4.78 & 4.88 & \(+0.14\) \\
+bhayanaka & 2.91 & 4.42 & 3.19 & \(+0.28\) \\
+bibhatsa  & 5.41 & 4.89 & 3.90 & \(-1.50\) \\
+adbhuta   & 4.03 & 4.31 & 3.52 & \(-0.51\) \\
+\bottomrule
+\end{tabular}
+\end{minipage}}
+\end{table}
+
+Version 2 was closer in length and farther in spectral distance. Aggregate pitch spread was close to that of the real recordings. By rasa, v2 moved closer to real pitch spread for \emph{bhayanaka}, overshot upward for \emph{hasya} and crossed below the real spread for \emph{adbhuta}. It was farther from the real average than base for six of the seven labels. Pitch spread summarizes variability within a clip without describing the contour.
+
+\sectionpage{External-speaker pilot}
+\subsection{Panel and test protocol}
+We streamed the Hindi and Tamil test configurations from IndicVoices-R, a multi-speaker Indic speech corpus designed in part for cross-speaker evaluation \cite{indicvoices}. The panel contains four distinct speakers, two per language. Each speaker contributed one reference clip for conditioning and a separate enrollment clip for similarity scoring. Prompts ranged from 3.52 to 9.95 seconds and enrollment recordings from 6.45 to 9.18 seconds. These voices come from a separate corpus from the Rasa adaptation set. Their inclusion in the original backbone's pretraining is unknown.
+
+We used one neutral-content sentence per language and kept it fixed across conditions. For each speaker we generated one unconditioned base clip and four v2 clips with \emph{shanta}, \emph{hasya}, \emph{karuna} and \emph{raudra}. The experiment produced 20 waveforms in total. It used the learned duration predictor, eight Euler steps, seed 0 and v2 emotion guidance 1. Synthesis ran on an Apple M1 through PyTorch MPS. We scored the resulting audio with the same ECAPA encoder on CPU.
+
+\subsection{Similarity to a separate enrollment recording}
+Let \(e(\cdot)\) be the speaker embedding. We measure
+\[
+ \operatorname{SIM}(a,b)=\frac{e(a)^{\mathsf T}e(b)}
+ {\lVert e(a)\rVert_2\lVert e(b)\rVert_2},
+\]
+where \(a\) is a generated clip and \(b\) is that speaker's enrollment recording. We first average each speaker's generated scores within a condition, then average across speakers. The real-prompt versus real-enrollment cosine averaged 0.660 across the panel, providing a reference for ordinary recording-to-recording variation in the same scorer.
+
+\begin{table}[!h]
+\centering
+\caption{External pilot. Base uses one generated clip per speaker and v2 averages four labels.}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Group & Base & v2, guidance 1 & v2 minus base \\
+\midrule
+Hindi (2 speakers) & 0.498 & 0.430 & \(-0.067\) \\
+Tamil (2 speakers) & 0.651 & 0.438 & \(-0.213\) \\
+All (4 speakers) & 0.574 & 0.434 & \(-0.140\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The run's language-stratified speaker bootstrap gave a descriptive 95\% interval of approximately \([-0.178,-0.102]\) for the paired drop. With two speakers per language, this interval reflects only resampling the available voices. It gives limited information about the population or a language-level difference. The earlier Rasa drop from 0.781 to 0.653 is numerically similar, but it used similarity to the prompt itself, a different corpus and a different label set. The two protocols support separate within-set comparisons. The Mac pilot's mean per-clip RTF, averaged by speaker, was 14.18 for base and 24.99 for v2, under the local hardware and workload.
+
+\sectionpage{LoRA ablation on the same four speakers}
+The external pilot measured a substantial drop after enabling v2, but the v2 condition changed several components at once. In particular, the neutral \emph{shanta} output still uses learned LoRA weights, the neutral emotion embedding and guidance. We added a matched condition that retained the checkpoint's LoRA updates while disabling the emotion pathway and emotion guidance. This isolates the effect of activating the learned low-rank weights relative to the base condition.
+
+We generated one additional waveform per speaker on the same Mac GPU. The reference, text, backbone and duration checkpoints, seed and eight-step sampler were the same as in the pilot. We verified that each new waveform had the same sample count and sampling rate as its matched base waveform. Both conditions were scored against the same separate enrollment recording. The four LoRA-only clips complement the 20 clips from the main pilot.
+
+\begin{table}[!h]
+\centering
+\caption{Matched ECAPA cosine. \emph{Shanta} retains label conditioning and guidance 1.}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Speaker & Base & LoRA only & v2 \emph{shanta} & LoRA minus base \\
+\midrule
+Hindi 1 & 0.562 & 0.439 & 0.553 & \(-0.123\) \\
+Hindi 2 & 0.434 & 0.403 & 0.469 & \(-0.030\) \\
+Tamil 1 & 0.643 & 0.495 & 0.382 & \(-0.148\) \\
+Tamil 2 & 0.659 & 0.501 & 0.433 & \(-0.158\) \\
+\midrule
+Mean & 0.574 & 0.460 & 0.459 & \(-0.115\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Activating LoRA alone lowered speaker similarity for all four speakers. The mean fell by 0.115, almost the same as the drop for the neutral \emph{shanta} condition. The similar means conceal different per-speaker effects. Relative to LoRA alone, full neutral conditioning increased both Hindi scores and decreased both Tamil scores. These paired results show that a drop can occur with emotion conditioning disabled. They also show that the effect of adding neutral conditioning and guidance depends on the example.
+
+\subsection{Interpretation of the pilot}
+The ablation identifies LoRA as sufficient to reduce the measured cosine on these prompts. It provides no evidence about which specific voice, if any, the generation resembles after adaptation. ECAPA embeddings can reflect changes in speaking style and recording conditions alongside identity. The mean across the three explicitly emotional labels was 0.426, and the mean for \emph{shanta} was 0.459. This difference describes the four-voice panel, with one sentence per speaker. With such a small panel, the effects of language, individual speaker, recording and text cannot be disentangled.
+
+The project therefore has evidence of synthesis on speakers external to the Rasa adaptation corpus and a controlled measurement of voice preservation on those speakers. The external protocol measured speaker similarity and runtime. The CER and emotion-agreement results in the preceding sections refer to the Rasa evaluation.
+
+\sectionpage{Published comparisons and reproducibility}
+Our direct baselines are the adapter-disabled Sooktam-2 and the count-based duration rules evaluated on the same local data. Published figures provide context for the methods and indicate how different test protocols report performance.
+
+{\small
+\begin{tabularx}{\linewidth}{@{}p{27mm}YY@{}}
+\toprule
+Study & Reported benchmark or finding & Relationship to this project \\
+\midrule
+Chen et al.\ \cite{f5} & Table 1 reports 2.53\% and 2.42\% WER at 16 and 32 NFE on LibriSpeech-PC test-clean. RTFs are 0.15 and 0.31 on an RTX 3090 for 10 seconds of speech. & Our runtime uses a Tesla T4 and a different workload. The paper reports English WER, while we report Hindi/Tamil CER. \\
+Srinivasa Varadhan et al.\ \cite{rasa} & Table 6 spans 6.8\% CER (sad, high-resource) to 13.2\% (surprise, low-resource). It reports human expressiveness separately using MUSHRA. & Our synthesized CER is 9.5--10.1\% in a different evaluation. The text and ASR protocols differ. \\
+Shaheen et al.\ \cite{shaheen} & Table 2 reports listener recognition of 57.9\% versus 9.8\% for their method and baseline. Speaker similarity MOS is 3.55 versus 3.70. & Their listener test illustrates a trade-off between expressiveness and voice preservation. Our speaker measure is ECAPA cosine. \\
+Li et al.\ \cite{eme} & EME-TTS scores 0.73 mean objective emotion accuracy with emotion2vec-plus-large (Table 2). & We use the same judge family with different labels, languages and test audio. \\
+Murata et al.\ \cite{murata} & Table 1 reports unseen-speaker SECS of 0.80 for anger, 0.84 for sadness and 0.79 for happiness. & Speaker samples, enrollment and scoring differ from our four-speaker pilot. \\
+\bottomrule
+\end{tabularx}}
+
+\subsection{Related duration predictors}
+A2TTS already uses cross-attention from text to a reference mel-spectrogram for speaker-conditioned duration prediction with a diffusion decoder \cite{a2tts}. Pandey et al.\ train a non-autoregressive continuous normalizing flow (CNF) on Indian speech and compare infilling and speaker-prompted duration predictors for zero-shot synthesis \cite{pandey}. Our predictor starts at the CLS-token count ratio, then learns token weights and an adjustment conditioned on the reference and requested emotion. We evaluate total frame-count error on held-out Hindi and Tamil Rasa pairs.
+
+Arigala et al.\ use language-specific character-duration statistics to correct inference-time estimates when reference and target languages differ \cite{arigala}. Our paired duration test uses same-language inputs, so the two evaluations address different timing conditions.
+
+\subsection{Artifacts and scope of the evidence}
+The project archive includes the Colab notebook, code, Rasa manifest and cache, checkpoints, generated audio and evaluation exports \cite{artifacts}. The external-speaker bundle also records the panel, checkpoint hashes, sampling settings, per-clip scores and matched LoRA ablation. Appendix~\ref{app:settings} records the principal training settings.
+
+\sectionpage{Conclusion}
+The learned duration predictor reduced held-out frame-count error from 16.59\% to 7.73\% and narrowed the Tamil--Hindi gap from 6.67 to 1.70 percentage points. The revised emotion adapter controlled delivery on neutral text. At guidance 1, the in-domain critic agreed with 76.2\% of requested labels and the independent judge agreed with 44.0\%. On the four external speakers, mean ECAPA cosine fell from 0.574 for base to 0.460 with LoRA alone and to 0.434 for the full v2 condition averaged across four labels. The matched ablation shows that enabling LoRA was sufficient to reduce measured speaker similarity on this panel.
+
+Rasa adaptation and held-out testing used four voices. The external pilot used four additional voices and one target sentence per language, which limits estimates of language and speaker effects. The project measured emotion and speaker similarity automatically. Human naturalness, recognizability and voice similarity remain open. The v2 training changes were evaluated together, and duration was tested within each language. Cross-script timing and the individual effects of v2's training changes need separate experiments.
+
+A conditioner-only model and a lower-rank LoRA run would test how much emotion control can survive with less change to the attention weights. Keeping the data, prompts, seed and guidance fixed would make these runs comparable to v2. Separate ablations of text dropout, input injection and the critic loss could identify which changes contribute to control. A larger external panel, a blinded native-listener test and a paired cross-script duration evaluation would extend the evidence.
+
+\subsection*{Acknowledgements}
+We thank Prof.\ Arnab Bhattacharya for supervising this undergraduate project. We acknowledge BharatGen for releasing Sooktam-2 and AI4Bharat for providing Rasa and IndicVoices-R.
+
+\clearpage
+\appendix
+\section{Training settings and per-label results}
+\label{app:settings}
+
+\begin{table}[!h]
+\centering
+\caption{Emotion adapter settings from the saved training checkpoints.}
+{\small
+\begin{tabularx}{\linewidth}{@{}Xll@{}}
+\toprule
+Setting & v1 & v2 \\
+\midrule
+Training steps and accelerator & 8,000, L4 & 6,000, A100 \\
+Mel frames per batch and accumulation & 16,000 / 1 & 16,000 / 1 \\
+LoRA rank and scaling parameter \((r,\alpha)\) & \(16,16\) & \(16,16\) \\
+LoRA learning rate & \(10^{-4}\) & \(10^{-4}\) \\
+Emotion learning rate & \(5\times10^{-4}\) & \(10^{-3}\) \\
+Optimizer and weight decay & AdamW, 0.01 & AdamW, 0.01 \\
+Warmup and decay & 300 steps, cosine & 300 steps, cosine \\
+Same-speaker pairing probability & 0.70 & 1.00 \\
+Audio / joint conditioning drop probabilities & 0.30 / 0.20 & 0.30 / 0.20 \\
+Emotion-label drop probability & 0.15 & 0.15 \\
+Text-only drop while retaining emotion & 0 & 0.30 \\
+Input-level emotion projection & Off & On \\
+Auxiliary critic loss weight & 0 & 0.15 \\
+\bottomrule
+\end{tabularx}}
+\end{table}
+
+Both adapter runs used bfloat16 and seed 0. Their learning-rate schedule warms up linearly and decays to 10\% of the configured rate. The duration model used AdamW (weight decay 0.01), a OneCycle schedule peaking at \(3\times10^{-4}\), 15,000 steps and batch size 32.
+
+\begin{table}[!h]
+\centering
+\caption{Version 2 at emotion guidance 3, scored by the in-domain mel critic. Rows are requested rasas and columns are predictions. Each row totals 12.}
+\label{tab:confusion}
+{\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Target & shanta & hasya & karuna & raudra & bhayanaka & bibhatsa & adbhuta \\
+\midrule
+shanta    & \textbf{12} & 0 & 0 & 0 & 0 & 0 & 0 \\
+hasya     & 8 & \textbf{4} & 0 & 0 & 0 & 0 & 0 \\
+karuna    & 6 & 0 & \textbf{6} & 0 & 0 & 0 & 0 \\
+raudra    & 0 & 0 & 0 & \textbf{12} & 0 & 0 & 0 \\
+bhayanaka & 0 & 0 & 0 & 0 & \textbf{12} & 0 & 0 \\
+bibhatsa  & 0 & 0 & 0 & 0 & 0 & \textbf{12} & 0 \\
+adbhuta   & 0 & 0 & 2 & 0 & 0 & 0 & \textbf{10} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+The independent judge differed on \emph{hasya}. It classified 10 of 12 happy requests as happy and two as angry. For \emph{karuna}, it classified four as sad, five as happy and three as neutral. The two judges therefore agree that sadness was difficult, while their judgments of happy speech diverged.
+
+\clearpage
+\begin{thebibliography}{99}
+\small
+\setlength{\itemsep}{3pt}
+\bibitem{sooktam} BharatGen AI. \emph{Sooktam-2}. Model card, released checkpoint and implementation. \href{https://huggingface.co/bharatgenai/sooktam2}{Hugging Face model repository}.
+\bibitem{f5} Y. Chen et al. \emph{F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching}. ACL, 2025. \href{https://aclanthology.org/2025.acl-long.313/}{ACL Anthology}. See Tables 1--2 and Appendix B.3 for benchmark settings.
+\bibitem{flow} Y. Lipman, R. T. Q. Chen, H. Ben-Hamu, M. Nickel and M. Le. \emph{Flow Matching for Generative Modeling}. ICLR, 2023. \href{https://arxiv.org/abs/2210.02747}{arXiv:2210.02747}.
+\bibitem{dit} W. Peebles and S. Xie. \emph{Scalable Diffusion Models with Transformers}. ICCV, 2023. \href{https://arxiv.org/abs/2212.09748}{arXiv:2212.09748}.
+\bibitem{vocos} H. Siuzdak. \emph{Vocos: Closing the Gap Between Time-Domain and Fourier-Based Neural Vocoders for High-Quality Audio Synthesis}. ICLR, 2024. \href{https://arxiv.org/abs/2306.00814}{arXiv:2306.00814}.
+\bibitem{rasa} P. Srinivasa Varadhan, A. Sankar, G. Raju and M. M. Khapra. \emph{Rasa: Building Expressive Speech Synthesis Systems for Indian Languages in Low-Resource Settings}. Interspeech, 2024. \href{https://www.isca-archive.org/interspeech_2024/srinivasavaradhan24_interspeech.html}{ISCA Archive}.
+\bibitem{rasacard} AI4Bharat. \emph{Rasa}. Distributed dataset and language configurations. \href{https://huggingface.co/datasets/ai4bharat/Rasa}{Hugging Face dataset repository}.
+\bibitem{attention} A. Vaswani et al. \emph{Attention Is All You Need}. NeurIPS, 2017. \href{https://arxiv.org/abs/1706.03762}{arXiv:1706.03762}.
+\bibitem{lora} E. J. Hu et al. \emph{LoRA: Low-Rank Adaptation of Large Language Models}. ICLR, 2022. \href{https://arxiv.org/abs/2106.09685}{arXiv:2106.09685}.
+\bibitem{cfg} J. Ho and T. Salimans. \emph{Classifier-Free Diffusion Guidance}. 2022. \href{https://arxiv.org/abs/2207.12598}{arXiv:2207.12598}.
+\bibitem{emotion2vec} Z. Ma et al. \emph{emotion2vec: Self-Supervised Pre-Training for Speech Emotion Representation}. Findings of ACL, 2024. \href{https://arxiv.org/abs/2312.15185}{Paper}; \href{https://huggingface.co/emotion2vec/emotion2vec_plus_large}{emotion2vec+ large checkpoint}.
+\bibitem{whisper} A. Radford et al. \emph{Robust Speech Recognition via Large-Scale Weak Supervision}. ICML, 2023. \href{https://arxiv.org/abs/2212.04356}{Paper}; \href{https://huggingface.co/openai/whisper-large-v3}{Whisper large-v3 model card}.
+\bibitem{ecapa} B. Desplanques, J. Thienpondt and K. Demuynck. \emph{ECAPA-TDNN: Emphasized Channel Attention, Propagation and Aggregation in TDNN Based Speaker Verification}. Interspeech, 2020. \href{https://arxiv.org/abs/2005.07143}{arXiv:2005.07143}.
+\bibitem{ecapamodel} SpeechBrain. \emph{Speaker Verification with ECAPA-TDNN Embeddings}. \href{https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb}{VoxCeleb checkpoint and model card}.
+\bibitem{indicvoices} A. Sankar et al. \emph{IndicVoices-R: Unlocking a Massive Multilingual Multi-speaker Speech Corpus for Scaling Indian TTS}. NeurIPS Datasets and Benchmarks, 2024. \href{https://arxiv.org/abs/2409.05356}{Paper}; \href{https://huggingface.co/datasets/ai4bharat/indicvoices_r}{dataset repository}.
+\bibitem{shaheen} Z. Shaheen et al. \emph{Exploiting Emotion Information in Speaker Embeddings for Expressive Text-to-Speech}. Interspeech, 2023. \href{https://www.isca-archive.org/interspeech_2023/shaheen23_interspeech.html}{ISCA Archive}.
+\bibitem{eme} H. Li, L. Qu, J. Hu and T. Li. \emph{EME-TTS: Unlocking the Emphasis and Emotion Link in Speech Synthesis}. Interspeech, 2025. \href{https://www.isca-archive.org/interspeech_2025/li25i_interspeech.html}{ISCA Archive}.
+\bibitem{murata} M. Murata, K. Miyazaki and T. Koriyama. \emph{Speaker-agnostic Emotion Vector for Cross-speaker Emotion Intensity Control}. Interspeech, 2025. \href{https://www.isca-archive.org/interspeech_2025/murata25_interspeech.html}{ISCA Archive}.
+\bibitem{arigala} A. Arigala, A. Gangwar and S. Umesh. \emph{Cross-Lingual TTS for Indian Languages: A Benchmark and Inference-Time Duration Estimation Strategies}. Proceedings of the 1st Workshop on Multi-modality and Multi-lingual Language Learning, pp.\ 47--55, November 2026. \href{https://aclanthology.org/2026.multilll-1.6/}{ACL Anthology}.
+\bibitem{artifacts} O. Bhongade and P. Shrivastav. \emph{Sooktam-2 \(\times\) Navarasa project artifacts}. Code, experiment log, manifest, checkpoints and evaluation exports, 2026. \href{https://drive.google.com/drive/folders/17_4z5fc2pWU12Bijkr2GYSiKVnu7UfBw}{Shared project archive}.
+\bibitem{a2tts} A. S. Bhadoriya, A. N. Shinde, I. Pandey and G. Ramakrishnan. \emph{A2TTS: TTS for Low Resource Indian Languages}. Preprint, 2025. \href{https://arxiv.org/abs/2507.15272}{arXiv:2507.15272}.
+\bibitem{pandey} I. Pandey, P. Gaikwad, A. Parulekar and G. Ramakrishnan. \emph{Technical report: Impact of Duration Prediction on Speaker-specific TTS for Indian Languages}. IIT Bombay and BharatGen, 2025. \href{https://arxiv.org/abs/2507.16875}{arXiv:2507.16875}.
+\end{thebibliography}
+\end{document}

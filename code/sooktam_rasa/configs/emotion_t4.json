@@ -1,0 +1,11 @@
+{
+  "_comment": "Free/paid Colab T4 (16 GB, no bf16). fp16 AMP + grad checkpointing. Watch the printed mem/s-per-step and raise frames_per_batch if memory allows.",
+  "frames_per_batch": 5000,
+  "grad_accum": 3,
+  "max_steps": 6000,
+  "amp": "auto",
+  "num_workers": 2,
+  "val_every": 500,
+  "save_every": 250,
+  "sample_every": 1000
+}

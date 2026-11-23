@@ -1,0 +1,21 @@
+clip_id,id,lang,sentence,text,condition,target,path,audio_seconds,synth_seconds,rtf
+hindi-01-1-base-unconditioned,hindi-01,hindi,1,कमरे की खिड़की खुली है।,base,,clips/hindi-01-1-base-unconditioned.wav,1.568,17.489193832996534,11.15382259757432
+hindi-01-1-v2_cfg1-shanta,hindi-01,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,shanta,clips/hindi-01-1-v2_cfg1-shanta.wav,1.568,25.05072395899333,15.976227014664113
+hindi-01-1-v2_cfg1-hasya,hindi-01,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,hasya,clips/hindi-01-1-v2_cfg1-hasya.wav,1.8453333333333333,29.677550792024704,16.082487784695466
+hindi-01-1-v2_cfg1-karuna,hindi-01,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,karuna,clips/hindi-01-1-v2_cfg1-karuna.wav,1.952,27.96049641701393,14.32402480379812
+hindi-01-1-v2_cfg1-raudra,hindi-01,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,raudra,clips/hindi-01-1-v2_cfg1-raudra.wav,1.6533333333333333,31.16971233402728,18.852648589129405
+hindi-02-1-base-unconditioned,hindi-02,hindi,1,कमरे की खिड़की खुली है।,base,,clips/hindi-02-1-base-unconditioned.wav,1.5146666666666666,25.38661483299802,16.76052915910961
+hindi-02-1-v2_cfg1-shanta,hindi-02,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,shanta,clips/hindi-02-1-v2_cfg1-shanta.wav,1.5146666666666666,31.95354587500333,21.09609102663072
+hindi-02-1-v2_cfg1-hasya,hindi-02,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,hasya,clips/hindi-02-1-v2_cfg1-hasya.wav,1.6853333333333333,36.481544042006135,21.646485784418196
+hindi-02-1-v2_cfg1-karuna,hindi-02,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,karuna,clips/hindi-02-1-v2_cfg1-karuna.wav,1.888,37.03602770800353,19.616540099578142
+hindi-02-1-v2_cfg1-raudra,hindi-02,hindi,1,कमरे की खिड़की खुली है।,v2_cfg1,raudra,clips/hindi-02-1-v2_cfg1-raudra.wav,1.5893333333333333,34.05790945800254,21.429053769716365
+tamil-01-1-base-unconditioned,tamil-01,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,base,,clips/tamil-01-1-base-unconditioned.wav,2.016,14.710238042025594,7.296745060528568
+tamil-01-1-v2_cfg1-shanta,tamil-01,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,shanta,clips/tamil-01-1-v2_cfg1-shanta.wav,2.016,17.837032791983802,8.847734519833235
+tamil-01-1-v2_cfg1-hasya,tamil-01,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,hasya,clips/tamil-01-1-v2_cfg1-hasya.wav,2.2506666666666666,21.97725366600207,9.764775029325564
+tamil-01-1-v2_cfg1-karuna,tamil-01,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,karuna,clips/tamil-01-1-v2_cfg1-karuna.wav,2.1866666666666665,22.69370154198259,10.3782171685896
+tamil-01-1-v2_cfg1-raudra,tamil-01,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,raudra,clips/tamil-01-1-v2_cfg1-raudra.wav,1.92,17.901420833019074,9.323656683864101
+tamil-02-1-base-unconditioned,tamil-02,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,base,,clips/tamil-02-1-base-unconditioned.wav,2.304,49.54263766700751,21.5028809318609
+tamil-02-1-v2_cfg1-shanta,tamil-02,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,shanta,clips/tamil-02-1-v2_cfg1-shanta.wav,2.304,152.93011062499136,66.37591606987472
+tamil-02-1-v2_cfg1-hasya,tamil-02,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,hasya,clips/tamil-02-1-v2_cfg1-hasya.wav,2.1226666666666665,155.7152459170029,73.35831308904031
+tamil-02-1-v2_cfg1-karuna,tamil-02,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,karuna,clips/tamil-02-1-v2_cfg1-karuna.wav,2.24,108.27491537499009,48.33701579240629
+tamil-02-1-v2_cfg1-raudra,tamil-02,tamil,1,அறையின் சன்னல் திறந்திருக்கிறது.,v2_cfg1,raudra,clips/tamil-02-1-v2_cfg1-raudra.wav,1.9093333333333333,46.70205004099989,24.45987257733933

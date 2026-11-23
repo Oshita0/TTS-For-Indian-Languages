@@ -1,0 +1,14 @@
+{
+  "panel_sha256": "04e1bcf4f74d0f9d0284449282086540131b2fd9c0d449768b6849d74c4c9429",
+  "steps": 8,
+  "seed": 0,
+  "device": "mps",
+  "hardware": "mps",
+  "checkpoints": {
+    "adapter": "cb96f77feeeeda57a33f5c02ee68ca3c31dab7a442e88f62cce29cec5d0e68d2",
+    "duration": "160e592eaf036c5da32b04cb78842b607d91aef4c7cfb1f66a6913acc16e6de1",
+    "backbone": "e5d7cbda57c6748a88a59d3893af3738e4f97aa31fc946fbdd6e93f4e7f37fe7"
+  },
+  "strong_guidance": false,
+  "sentences": 1
+}

@@ -1,0 +1,86 @@
+{
+  "dataset": "ai4bharat/indicvoices_r",
+  "revision": "5f4495c91d500742a58d1be2ab07d77f73c0acf8",
+  "split": "test",
+  "seed": 2026,
+  "training_speaker_groups": [
+    "hindi_female",
+    "hindi_male",
+    "tamil_female",
+    "tamil_male"
+  ],
+  "speakers": [
+    {
+      "id": "hindi-01",
+      "speaker_id": "S4258858600387188",
+      "lang": "hindi",
+      "gender": "male",
+      "ref": {
+        "path": "audio/hindi-01-ref.wav",
+        "text": "और ट्रैकोनौलजी सब से जादा सब से जादा अंगरेजी को",
+        "source_file": "5348024557737620_chunk_7_enhanced.wav",
+        "seconds": 5.92
+      },
+      "enrollment": {
+        "path": "audio/hindi-01-enrollment.wav",
+        "text": "इस समय प्रचालन बहुत तेजी से है और यहाँ के लोग सादी वियाहों में भी यही खाना",
+        "source_file": "5348024557737623_chunk_8_enhanced.wav",
+        "seconds": 6.592
+      }
+    },
+    {
+      "id": "hindi-02",
+      "speaker_id": "S4258561600395718",
+      "lang": "hindi",
+      "gender": "female",
+      "ref": {
+        "path": "audio/hindi-02-ref.wav",
+        "text": "जैसे कि हम जानते ही हैं आज कल अंग्रेजी भाषा को काफ़ी महत्वपूर्णता दी जाती है",
+        "source_file": "5348024557635198_chunk_2_enhanced.wav",
+        "seconds": 6.719020833333333
+      },
+      "enrollment": {
+        "path": "audio/hindi-02-enrollment.wav",
+        "text": "उतना पढ़ाई का उतनी पढ़ाई मे गुणवत्ता नही है जितनी अन्य जो कॉलेज वगैरा मे है",
+        "source_file": "5348024557637377_chunk_5_enhanced.wav",
+        "seconds": 6.452020833333333
+      }
+    },
+    {
+      "id": "tamil-01",
+      "speaker_id": "S4256620800339114",
+      "lang": "tamil",
+      "gender": "male",
+      "ref": {
+        "path": "audio/tamil-01-ref.wav",
+        "text": "மார்க் எடுத்துட்டேன் அதுலையும் ஒருத்தரு கம்ப்யூட்ரு சார் ஒருத்தரு இருப்பாரு",
+        "source_file": "3096224744184519_chunk_72_enhanced.wav",
+        "seconds": 3.5190208333333333
+      },
+      "enrollment": {
+        "path": "audio/tamil-01-enrollment.wav",
+        "text": "வேற எனக்கு நானு மூவி மூவி பாக்குறதுலாம் இன்ட்ரெஸ்ட் இருக்கு நெறையா",
+        "source_file": "3096224744184519_chunk_166_enhanced.wav",
+        "seconds": 6.499020833333334
+      }
+    },
+    {
+      "id": "tamil-02",
+      "speaker_id": "S4256730700334621",
+      "lang": "tamil",
+      "gender": "female",
+      "ref": {
+        "path": "audio/tamil-02-ref.wav",
+        "text": "ஆனா அந்தியூர் பக்கம்ங்க தண்ணிக்கு கொஞ்சோம் கஷ்டோம் தானுங்க வரக்காடு எல்லாமே மழயும் சரியா வரவே மாட்டிக்கிதுங்க இப்போ அப்பறம் ஆடு மாடெல்லாம் வச்சிட்டு ரொம்ப கஷ்டப்பட்டுட்டு இருக்குறாங்க",
+        "source_file": "3096224744040939_chunk_7_enhanced.wav",
+        "seconds": 9.951
+      },
+      "enrollment": {
+        "path": "audio/tamil-02-enrollment.wav",
+        "text": "அதே மாதிரி எஸ்ஐடி இருக்குது பால்டெக்னிக் காலேஜ் இருக்குது அக்ரி இருக்குது அக்ரி காலேஜ் குமரகுரு காலேஜ் இருக்குது ஈரோட்ல திண்டல் திண்டல் வந்து",
+        "source_file": "3096224744040953_chunk_2_enhanced.wav",
+        "seconds": 9.184
+      }
+    }
+  ]
+}

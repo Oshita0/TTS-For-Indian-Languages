@@ -1,0 +1,329 @@
+{
+  "real_recording": {
+    "e2v_acc": 0.40714285714285714,
+    "e2v_acc_emotional": 0.35,
+    "pred_shanta": 0.17857142857142858,
+    "cer": 0.06656052501848002,
+    "spk_sim": NaN,
+    "n": 140,
+    "confusion": {
+      "shanta": {
+        "shanta": 15,
+        "hasya": 4,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 1
+      },
+      "hasya": {
+        "shanta": 0,
+        "hasya": 19,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 1
+      },
+      "karuna": {
+        "shanta": 7,
+        "hasya": 6,
+        "karuna": 1,
+        "raudra": 0,
+        "bhayanaka": 1,
+        "bibhatsa": 3,
+        "adbhuta": 2
+      },
+      "raudra": {
+        "shanta": 1,
+        "hasya": 4,
+        "karuna": 0,
+        "raudra": 9,
+        "bhayanaka": 0,
+        "bibhatsa": 2,
+        "adbhuta": 4
+      },
+      "bhayanaka": {
+        "shanta": 1,
+        "hasya": 8,
+        "karuna": 2,
+        "raudra": 0,
+        "bhayanaka": 5,
+        "bibhatsa": 0,
+        "adbhuta": 4
+      },
+      "bibhatsa": {
+        "shanta": 1,
+        "hasya": 10,
+        "karuna": 0,
+        "raudra": 1,
+        "bhayanaka": 0,
+        "bibhatsa": 1,
+        "adbhuta": 7
+      },
+      "adbhuta": {
+        "shanta": 0,
+        "hasya": 13,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 7
+      }
+    },
+    "by_lang": {
+      "hindi": 0.3,
+      "tamil": 0.5142857142857142
+    }
+  },
+  "base": {
+    "e2v_acc": null,
+    "e2v_acc_emotional": null,
+    "pred_shanta": 0.6666666666666666,
+    "cer": 0.10113040169810565,
+    "spk_sim": 0.7813675105571747,
+    "n": 12,
+    "confusion": null,
+    "by_lang": {},
+    "prediction_distribution": {
+      "shanta": 0.6666666666666666,
+      "hasya": 0.3333333333333333,
+      "karuna": 0.0,
+      "raudra": 0.0,
+      "bhayanaka": 0.0,
+      "bibhatsa": 0.0,
+      "adbhuta": 0.0
+    }
+  },
+  "cfg0": {
+    "e2v_acc": 0.3333333333333333,
+    "e2v_acc_emotional": 0.2638888888888889,
+    "pred_shanta": 0.39285714285714285,
+    "cer": 0.09486293223377207,
+    "spk_sim": 0.684654882975987,
+    "n": 84,
+    "confusion": {
+      "shanta": {
+        "shanta": 9,
+        "hasya": 3,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "hasya": {
+        "shanta": 1,
+        "hasya": 8,
+        "karuna": 0,
+        "raudra": 3,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "karuna": {
+        "shanta": 6,
+        "hasya": 5,
+        "karuna": 1,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "raudra": {
+        "shanta": 2,
+        "hasya": 3,
+        "karuna": 0,
+        "raudra": 7,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "bhayanaka": {
+        "shanta": 6,
+        "hasya": 1,
+        "karuna": 3,
+        "raudra": 0,
+        "bhayanaka": 1,
+        "bibhatsa": 1,
+        "adbhuta": 0
+      },
+      "bibhatsa": {
+        "shanta": 6,
+        "hasya": 2,
+        "karuna": 0,
+        "raudra": 2,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 2
+      },
+      "adbhuta": {
+        "shanta": 3,
+        "hasya": 4,
+        "karuna": 0,
+        "raudra": 2,
+        "bhayanaka": 0,
+        "bibhatsa": 1,
+        "adbhuta": 2
+      }
+    },
+    "by_lang": {
+      "hindi": 0.35714285714285715,
+      "tamil": 0.30952380952380953
+    }
+  },
+  "cfg1": {
+    "e2v_acc": 0.44047619047619047,
+    "e2v_acc_emotional": 0.375,
+    "pred_shanta": 0.3333333333333333,
+    "cer": 0.09770511038082826,
+    "spk_sim": 0.6532801847372737,
+    "n": 84,
+    "confusion": {
+      "shanta": {
+        "shanta": 10,
+        "hasya": 2,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "hasya": {
+        "shanta": 2,
+        "hasya": 7,
+        "karuna": 0,
+        "raudra": 3,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "karuna": {
+        "shanta": 5,
+        "hasya": 5,
+        "karuna": 2,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "raudra": {
+        "shanta": 0,
+        "hasya": 2,
+        "karuna": 0,
+        "raudra": 10,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "bhayanaka": {
+        "shanta": 5,
+        "hasya": 1,
+        "karuna": 2,
+        "raudra": 0,
+        "bhayanaka": 3,
+        "bibhatsa": 0,
+        "adbhuta": 1
+      },
+      "bibhatsa": {
+        "shanta": 4,
+        "hasya": 2,
+        "karuna": 0,
+        "raudra": 2,
+        "bhayanaka": 0,
+        "bibhatsa": 1,
+        "adbhuta": 3
+      },
+      "adbhuta": {
+        "shanta": 2,
+        "hasya": 5,
+        "karuna": 0,
+        "raudra": 1,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 4
+      }
+    },
+    "by_lang": {
+      "hindi": 0.47619047619047616,
+      "tamil": 0.40476190476190477
+    }
+  },
+  "cfg3": {
+    "e2v_acc": 0.5833333333333334,
+    "e2v_acc_emotional": 0.5416666666666666,
+    "pred_shanta": 0.21428571428571427,
+    "cer": 0.10057520776312077,
+    "spk_sim": 0.5678386109925452,
+    "n": 84,
+    "confusion": {
+      "shanta": {
+        "shanta": 10,
+        "hasya": 2,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "hasya": {
+        "shanta": 0,
+        "hasya": 10,
+        "karuna": 0,
+        "raudra": 2,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "karuna": {
+        "shanta": 3,
+        "hasya": 5,
+        "karuna": 4,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "raudra": {
+        "shanta": 0,
+        "hasya": 1,
+        "karuna": 0,
+        "raudra": 11,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 0
+      },
+      "bhayanaka": {
+        "shanta": 2,
+        "hasya": 1,
+        "karuna": 2,
+        "raudra": 0,
+        "bhayanaka": 3,
+        "bibhatsa": 0,
+        "adbhuta": 4
+      },
+      "bibhatsa": {
+        "shanta": 2,
+        "hasya": 1,
+        "karuna": 0,
+        "raudra": 3,
+        "bhayanaka": 0,
+        "bibhatsa": 4,
+        "adbhuta": 2
+      },
+      "adbhuta": {
+        "shanta": 1,
+        "hasya": 4,
+        "karuna": 0,
+        "raudra": 0,
+        "bhayanaka": 0,
+        "bibhatsa": 0,
+        "adbhuta": 7
+      }
+    },
+    "by_lang": {
+      "hindi": 0.5952380952380952,
+      "tamil": 0.5714285714285714
+    }
+  }
+}

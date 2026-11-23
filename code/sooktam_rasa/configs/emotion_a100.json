@@ -1,0 +1,11 @@
+{
+  "_comment": "Colab Pro A100 40GB / L4 24GB (bf16). For L4 use frames_per_batch 9000.",
+  "frames_per_batch": 16000,
+  "grad_accum": 1,
+  "max_steps": 8000,
+  "amp": "auto",
+  "num_workers": 4,
+  "val_every": 500,
+  "save_every": 500,
+  "sample_every": 1000
+}

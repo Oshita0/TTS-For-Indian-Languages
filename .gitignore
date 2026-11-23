@@ -1,0 +1,16 @@
+# Local environments and caches
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+# Binary research artifacts are supplied in the complete project release.
+*.pt
+*.safetensors
+*.wav
+*.tar
+*.zip
+*.zip.part*
